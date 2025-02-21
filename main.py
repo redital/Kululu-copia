@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 import base64
 from datetime import datetime
+from config import Config, flask_app_config
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "static/uploads"
@@ -38,4 +39,4 @@ def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == "__main__":
-    app.run(debug=True,port=5000)
+    app.run(**flask_app_config)
