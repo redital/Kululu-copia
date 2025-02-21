@@ -33,7 +33,7 @@ def upload():
 
     return jsonify({"message": "Foto salvata!", "filename": filename})
 
-@app.route("/images")
+@app.route("/media")
 def get_images():
     """ Restituisce l'elenco delle immagini salvate """
     images = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith(".png")]
