@@ -31,7 +31,7 @@ def upload():
     data = request.json.get("image")
     if data:
         image_data = base64.b64decode(data.split(",")[1])
-        filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_photo.png"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         
         with open(filepath, "wb") as f:
@@ -49,7 +49,7 @@ def get_media():
     return jsonify(files)
 
 def date_parser(nome_foto):
-    stringa_data = nome_foto[6:-4]
+    stringa_data = nome_foto[:15]
     data = datetime.strptime(stringa_data, '%Y%m%d_%H%M%S')
     return data
 
