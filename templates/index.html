@@ -22,14 +22,13 @@
         .gallery-item {
             margin: 5px;
             max-width: 300px;
-            max-height: 300px;
             overflow: hidden;
             border-radius: 8px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
         }
         .gallery-item img, .gallery-item video {
             width: 100%;
-            height: 100%;
+            height: auto;
             object-fit: contain;
         }
     </style>
@@ -39,7 +38,14 @@
 
     <video id="video" width="320" height="240" autoplay></video>
     <button id="capture">Scatta Foto</button>
+    <button id="record">Inizia Registrazione</button>
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+    <h2>Carica Foto o Video</h2>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*,video/*" required>
+        <button type="submit">Carica</button>
+    </form>
 
     <h2>Galleria 📷🎥</h2>
     <div id="gallery"></div>
@@ -49,14 +55,16 @@
         const canvas = document.getElementById("canvas");
         const context = canvas.getContext("2d");
         const captureButton = document.getElementById("capture");
+        const recordButton = document.getElementById("record");
         const gallery = document.getElementById("gallery");
 
-        // Attiviamo la webcam
-        navigator.mediaDevices.getUserMedia({ video: true })
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => video.srcObject = stream)
             .catch(err => console.error("Errore webcam:", err));
 
-        // Cattura l'immagine e la invia al server
         captureButton.addEventListener("click", () => {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = canvas.toDataURL("image/png");
@@ -69,13 +77,42 @@
             .then(response => response.json())
             .then(data => {
                 if (data.filename) {
-                    loadMedia(); // Ricarica la galleria
+                    loadMedia();
                 }
             })
             .catch(error => console.error("Errore upload:", error));
         });
 
-        // Carica le immagini e i video salvati
+        recordButton.addEventListener("click", () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                mediaRecorder = new MediaRecorder(video.srcObject);
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: "video/webm" });
+                    const formData = new FormData();
+                    formData.append("file", blob, `video_${Date.now()}.webm`);
+
+                    fetch("/upload", {
+                        method: "POST",
+                        body: formData
+                    }).then(() => loadMedia());
+                };
+
+                mediaRecorder.start();
+                recordButton.textContent = "Stop Registrazione";
+            } else {
+                mediaRecorder.stop();
+                recordButton.textContent = "Inizia Registrazione";
+            }
+        });
+
         function loadMedia() {
             fetch("/media")
                 .then(response => response.json())
@@ -102,7 +139,6 @@
                 });
         }
 
-        // Carica i media al caricamento della pagina
         loadMedia();
     </script>
 </body>

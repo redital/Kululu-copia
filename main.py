@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 import os
 import base64
 from datetime import datetime
 from config import Config, flask_app_config
-from datetime import datetime
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "static/uploads"
@@ -19,27 +18,35 @@ def index():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    data = request.json.get("image")  # Otteniamo l'immagine in base64
-    if not data:
-        return jsonify({"error": "Nessuna immagine ricevuta"}), 400
-    
-    # Decodifica l'immagine
-    image_data = base64.b64decode(data.split(",")[1])
-    filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    
-    with open(filepath, "wb") as f:
-        f.write(image_data)
+    # Se il caricamento avviene tramite file (immagini o video)
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            return redirect(url_for('index'))
 
-    return jsonify({"message": "Foto salvata!", "filename": filename})
+    # Se il caricamento avviene tramite webcam (solo foto in base64)
+    data = request.json.get("image")
+    if data:
+        image_data = base64.b64decode(data.split(",")[1])
+        filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        
+        with open(filepath, "wb") as f:
+            f.write(image_data)
+
+        return jsonify({"message": "Foto salvata!", "filename": filename})
+
+    return jsonify({"error": "Nessun file ricevuto"}), 400
 
 @app.route("/media")
-def get_images():
-    """ Restituisce l'elenco delle immagini salvate """
-    images = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith(".png")]
-    images = ordina_foto(images)[::-1]
-    return jsonify(images)
-
+def get_media():
+    """ Restituisce l'elenco dei file salvati (immagini e video) """
+    files = [f for f in os.listdir(UPLOAD_FOLDER) if allowed_file(f)]
+    files = ordina_foto(files)[::-1]
+    return jsonify(files)
 
 def date_parser(nome_foto):
     stringa_data = nome_foto[6:-4]
@@ -47,12 +54,9 @@ def date_parser(nome_foto):
     return data
 
 def ordina_foto(lista_foto):
-    dizionario_date = {i:date_parser(i) for i in lista_foto}
-
-    sort_dates = lambda x : dict(sorted(x.items(), key=lambda item: item[1]))
-
+    dizionario_date = {i: date_parser(i) for i in lista_foto}
+    sort_dates = lambda x: dict(sorted(x.items(), key=lambda item: item[1]))
     dizionario_date = sort_dates(dizionario_date)
-
     return list(dizionario_date.keys())
 
 @app.route("/static/uploads/<filename>")
@@ -61,6 +65,3 @@ def uploaded_file(filename):
 
 if __name__ == "__main__":
     app.run(**flask_app_config)
-
-
-
