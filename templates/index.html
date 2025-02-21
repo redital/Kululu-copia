@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatta una Foto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        video, canvas {
+            display: block;
+            margin: 10px auto;
+        }
+        #gallery {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        img {
+            margin: 5px;
+            max-width: 150px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1>Scatta una Foto 📸</h1>
+
+    <video id="video" width="320" height="240" autoplay></video>
+    <button id="capture">Scatta Foto</button>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+    <h2>Galleria 📷</h2>
+    <div id="gallery"></div>
+
+    <script>
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+        const captureButton = document.getElementById("capture");
+        const gallery = document.getElementById("gallery");
+
+        // Attiviamo la webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => console.error("Errore webcam:", err));
+
+        // Cattura l'immagine e la invia al server
+        captureButton.addEventListener("click", () => {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/png");
+
+            fetch("/upload", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filename) {
+                    loadImages(); // Ricarica la galleria
+                }
+            })
+            .catch(error => console.error("Errore upload:", error));
+        });
+
+        // Carica le immagini salvate
+        function loadImages() {
+            fetch("/images")
+                .then(response => response.json())
+                .then(images => {
+                    gallery.innerHTML = "";
+                    images.forEach(img => {
+                        const imgElement = document.createElement("img");
+                        imgElement.src = `/static/uploads/${img}`;
+                        gallery.appendChild(imgElement);
+                    });
+                });
+        }
+
+        // Carichiamo le immagini al caricamento della pagina
+        loadImages();
+    </script>
+</body>
+</html>
