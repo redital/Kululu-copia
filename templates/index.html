@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scatta una Foto</title>
+    <title>Scatta una Foto o Registra un Video</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -19,22 +19,29 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-        img {
+        .gallery-item {
             margin: 5px;
-            max-width: 150px;
+            max-width: 300px;
+            max-height: 300px;
+            overflow: hidden;
             border-radius: 8px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
 <body>
-    <h1>Scatta una Foto 📸</h1>
+    <h1>Scatta una Foto 📸 o Registra un Video 🎥</h1>
 
     <video id="video" width="320" height="240" autoplay></video>
     <button id="capture">Scatta Foto</button>
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
-    <h2>Galleria 📷</h2>
+    <h2>Galleria 📷🎥</h2>
     <div id="gallery"></div>
 
     <script>
@@ -62,28 +69,41 @@
             .then(response => response.json())
             .then(data => {
                 if (data.filename) {
-                    loadImages(); // Ricarica la galleria
+                    loadMedia(); // Ricarica la galleria
                 }
             })
             .catch(error => console.error("Errore upload:", error));
         });
 
-        // Carica le immagini salvate
-        function loadImages() {
-            fetch("/images")
+        // Carica le immagini e i video salvati
+        function loadMedia() {
+            fetch("/media")
                 .then(response => response.json())
-                .then(images => {
+                .then(files => {
                     gallery.innerHTML = "";
-                    images.forEach(img => {
-                        const imgElement = document.createElement("img");
-                        imgElement.src = `/static/uploads/${img}`;
-                        gallery.appendChild(imgElement);
+                    files.forEach(file => {
+                        const ext = file.split('.').pop().toLowerCase();
+                        const container = document.createElement("div");
+                        container.classList.add("gallery-item");
+
+                        if (["png", "jpg", "jpeg", "gif"].includes(ext)) {
+                            const imgElement = document.createElement("img");
+                            imgElement.src = `/static/uploads/${file}`;
+                            container.appendChild(imgElement);
+                        } else if (["mp4", "webm", "ogg"].includes(ext)) {
+                            const videoElement = document.createElement("video");
+                            videoElement.controls = true;
+                            videoElement.src = `/static/uploads/${file}`;
+                            container.appendChild(videoElement);
+                        }
+
+                        gallery.appendChild(container);
                     });
                 });
         }
 
-        // Carichiamo le immagini al caricamento della pagina
-        loadImages();
+        // Carica i media al caricamento della pagina
+        loadMedia();
     </script>
 </body>
 </html>
