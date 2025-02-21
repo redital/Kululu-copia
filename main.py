@@ -33,7 +33,7 @@ def upload():
 def get_images():
     """ Restituisce l'elenco delle immagini salvate """
     images = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith(".png")]
-    images = ordina_foto(images)
+    images = ordina_foto(images)[::-1]
     return jsonify(images)
 
 
