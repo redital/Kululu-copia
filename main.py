@@ -31,7 +31,7 @@ def upload():
 @app.route("/images")
 def get_images():
     """ Restituisce l'elenco delle immagini salvate """
-    images = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith(".png")]
+    images = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith(".png")][::-1]
     return jsonify(images)
 
 @app.route("/static/uploads/<filename>")
