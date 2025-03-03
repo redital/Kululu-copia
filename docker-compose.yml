@@ -22,7 +22,7 @@ services:
     image: ngrok/ngrok:latest
     command:
       - "https"
-      - "--domain=${DOMINIO:-placeholder}"
+      - "--hostname=${DOMINIO:-placeholder}"
       - "partypics:${FLASK_PORT:-5000}"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN:-placeholder}
