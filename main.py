@@ -3,8 +3,10 @@ import os
 import base64
 from datetime import datetime
 from config import Config, flask_app_config
+from flask_socketio import SocketIO
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'ogg'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Crea la cartella se non esiste
@@ -25,6 +27,7 @@ def upload():
             filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
+            socketio.emit("media_uploaded")  # Notifica tutti i client
             return redirect(url_for('index'))
 
     # Se il caricamento avviene tramite webcam (solo foto in base64)
@@ -36,7 +39,8 @@ def upload():
         
         with open(filepath, "wb") as f:
             f.write(image_data)
-
+        
+        socketio.emit("media_uploaded")  # Notifica tutti i client
         return jsonify({"message": "Foto salvata!", "filename": filename})
 
     return jsonify({"error": "Nessun file ricevuto"}), 400
@@ -64,4 +68,4 @@ def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == "__main__":
-    app.run(**flask_app_config)
+    socketio.run(app, **flask_app_config)

@@ -4,6 +4,7 @@ const context = canvas.getContext("2d");
 const captureButton = document.getElementById("capture");
 const recordButton = document.getElementById("record");
 const gallery = document.getElementById("gallery");
+const socket = io();
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -91,5 +92,10 @@ function loadMedia() {
             });
         });
 }
+
+// Aggiorna la galleria quando un nuovo file viene caricato
+socket.on("media_uploaded", () => {
+    loadMedia();
+});
 
 loadMedia();
