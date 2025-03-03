@@ -21,8 +21,8 @@ services:
   ngrok:
     image: ngrok/ngrok:latest
     command:
-      - "https"
-      - "--hostname=${DOMINIO:-placeholder}"
+      - "http"
+      - "--domain=${DOMINIO:-placeholder}"
       - "partypics:${FLASK_PORT:-5000}"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN:-placeholder}
