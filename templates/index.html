@@ -3,130 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scatta una Foto o Registra un Video</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-
-        h1, h2 {
-            margin-top: 20px;
-            color: #fff;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            letter-spacing: 1px;
-        }
-
-        h2 {
-            font-size: 1.8em;
-            margin-top: 40px;
-            color: #ff6347;
-        }
-
-        button {
-            background-color: #ff6347;
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            font-size: 1.1em;
-            cursor: pointer;
-            border-radius: 8px;
-            margin: 10px;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #ff4500;
-            transform: scale(1.1);
-        }
-
-        video, canvas {
-            display: block;
-            margin: 20px auto;
-            border-radius: 8px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.7);
-        }
-
-        #gallery {
-            margin-top: 40px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .gallery-item {
-            width: 300px;
-            height: 300px;
-            overflow: hidden;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            transform: scale(1);
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .gallery-item:hover {
-            transform: scale(1.05);
-        }
-
-        .gallery-item img, .gallery-item video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .upload-form {
-            margin-top: 40px;
-        }
-
-        .upload-form input[type="file"] {
-            padding: 10px;
-            background-color: #333;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            margin-right: 10px;
-        }
-
-        .upload-form button {
-            background-color: #28a745;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-        }
-
-        .upload-form button:hover {
-            background-color: #218838;
-        }
-
-        .footer {
-            margin-top: 60px;
-            padding: 10px;
-            background-color: #1a1a1a;
-            color: #ccc;
-        }
-
-        .footer a {
-            color: #ff6347;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <title>PartyPics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Scatta una Foto 📸 o Registra un Video 🎥</h1>
+    <h1>PartyPics</h1>
+    <h3>Scatta una Foto 📸 o Registra un Video 🎥</h3>
 
     <video muted id="video" width="320" height="240" autoplay></video>
     <button id="capture">Scatta Foto</button>
@@ -142,100 +24,10 @@
     <h2>Galleria 📷🎥</h2>
     <div id="gallery"></div>
 
-    <script>
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const context = canvas.getContext("2d");
-        const captureButton = document.getElementById("capture");
-        const recordButton = document.getElementById("record");
-        const gallery = document.getElementById("gallery");
-
-        let mediaRecorder;
-        let recordedChunks = [];
-
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => video.srcObject = stream)
-            .catch(err => console.error("Errore webcam:", err));
-
-        captureButton.addEventListener("click", () => {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL("image/png");
-
-            fetch("/upload", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: imageData })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.filename) {
-                    loadMedia();
-                }
-            })
-            .catch(error => console.error("Errore upload:", error));
-        });
-
-        recordButton.addEventListener("click", () => {
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-                mediaRecorder = new MediaRecorder(video.srcObject);
-                recordedChunks = [];
-
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        recordedChunks.push(event.data);
-                    }
-                };
-
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: "video/webm" });
-                    const formData = new FormData();
-                    formData.append("file", blob, `video_${Date.now()}.webm`);
-
-                    fetch("/upload", {
-                        method: "POST",
-                        body: formData
-                    }).then(() => loadMedia());
-                };
-
-                mediaRecorder.start();
-                recordButton.textContent = "Stop Registrazione";
-            } else {
-                mediaRecorder.stop();
-                recordButton.textContent = "Inizia Registrazione";
-            }
-        });
-
-        function loadMedia() {
-            fetch("/media")
-                .then(response => response.json())
-                .then(files => {
-                    gallery.innerHTML = "";
-                    files.forEach(file => {
-                        const ext = file.split('.').pop().toLowerCase();
-                        const container = document.createElement("div");
-                        container.classList.add("gallery-item");
-
-                        if (["png", "jpg", "jpeg", "gif"].includes(ext)) {
-                            const imgElement = document.createElement("img");
-                            imgElement.src = `/static/uploads/${file}`;
-                            container.appendChild(imgElement);
-                        } else if (["mp4", "webm", "ogg"].includes(ext)) {
-                            const videoElement = document.createElement("video");
-                            videoElement.controls = true;
-                            videoElement.src = `/static/uploads/${file}`;
-                            container.appendChild(videoElement);
-                        }
-
-                        gallery.appendChild(container);
-                    });
-                });
-        }
-
-        loadMedia();
-    </script>
-
     <div class="footer">
-        <p>© 2025 Creazione di Christian - <a href="mailto:christian@esempio.com">Contattami</a></p>
+        <p>© 2025 Creazione di Christian</p>
     </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
