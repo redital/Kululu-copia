@@ -1,3 +1,4 @@
 flask
 Werkzeug
 cryptography
+flask_socketio
