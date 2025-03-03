@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   partypics:
     container_name: partypics
@@ -11,8 +9,23 @@ services:
       - FLASK_HOST=${FLASK_HOST:-0.0.0.0}
       - FLASK_PORT=${FLASK_PORT:-5000}    
       - SECRET_KEY=${SECRET_KEY:-mysecretkey}
+      
+      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN:-placeholder}
+      - DOMINIO=${DOMINIO:-placeholder}
     ports:
       - "8209:${FLASK_PORT}"
     restart: unless-stopped
     build: .
     pull_policy: build
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command:
+      - "http"
+      - "https://172.27.0.3:5000"
+      - "--domain=${DOMINIO:-placeholder}"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN:-placeholder}
+      - DOMINIO=${DOMINIO:-placeholder}
+    ports:
+      - 4041:4040
