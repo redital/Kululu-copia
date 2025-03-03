@@ -28,4 +28,4 @@ services:
       - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN:-placeholder}
       - DOMINIO=${DOMINIO:-placeholder}
     ports:
-      - 4040:4040
+      - 4040:4041
