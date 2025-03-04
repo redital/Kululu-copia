@@ -3,17 +3,35 @@ const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
 const captureButton = document.getElementById("capture");
 const recordButton = document.getElementById("record");
+const switchButton = document.getElementById("switchCamera");
 const gallery = document.getElementById("gallery");
 const socket = io();
 
 let mediaRecorder;
 let recordedChunks = [];
+let currentCamera = "environment"; // "environment" = posteriore, "user" = anteriore
 
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then(stream => video.srcObject = stream)
+// Funzione per avviare la webcam con la fotocamera scelta
+function startCamera(camera) {
+    navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: camera, width: 1920, height: 1080 }, 
+        audio: true 
+    })
+    .then(stream => {
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+            video.play();
+        };
+    })
     .catch(err => console.error("Errore webcam:", err));
+}
+
+// Avvia la webcam all'avvio
+startCamera(currentCamera);
 
 captureButton.addEventListener("click", () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = canvas.toDataURL("image/png");
 
@@ -67,6 +85,16 @@ recordButton.addEventListener("click", () => {
     }
 });
 
+switchButton.addEventListener("click", () => {
+    currentCamera = currentCamera === "environment" ? "user" : "environment";
+
+    // Interrompe lo stream attuale
+    video.srcObject.getTracks().forEach(track => track.stop());
+
+    // Avvia la nuova fotocamera
+    startCamera(currentCamera);
+});
+
 function loadMedia() {
     fetch("/media")
         .then(response => response.json())
@@ -80,6 +108,7 @@ function loadMedia() {
                 if (["png", "jpg", "jpeg", "gif"].includes(ext)) {
                     const imgElement = document.createElement("img");
                     imgElement.src = `/static/uploads/${file}`;
+                    imgElement.style.objectFit = "contain";
                     container.appendChild(imgElement);
                 } else if (["mp4", "webm", "ogg"].includes(ext)) {
                     const videoElement = document.createElement("video");
